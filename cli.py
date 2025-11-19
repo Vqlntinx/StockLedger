@@ -53,6 +53,9 @@ class CLI:
     def view_positions(self):
         pos = self.service.get_positions()
         for ticker, info in pos.items():
+            if info["qty"] == 0:
+                continue
+            
             print(f"\n[{ticker}]")
             print(f"Quantity: {info['qty']}")
             print(f"Average Price: {info['avg_price']:.2f}")
