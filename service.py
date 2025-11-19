@@ -45,19 +45,31 @@ class StockService:
         position = defaultdict(lambda: {"qty": 0, "total_cost": 0.0})
 
         for t in trades:
+            pos = position[t.ticker]
+
             if t.trade_type == TradeType.BUY:
-                position[t.ticker]["qty"] += t.quantity
-                position[t.ticker]["total_cost"] += t.price * t.quantity + t.fee
+                pos["qty"] += t.quantity
+                pos["total_cost"] += t.price * t.quantity + t.fee
 
             elif t.trade_type == TradeType.SELL:
-                position[t.ticker]["qty"] -= t.quantity
-                position[t.ticker]["total_cost"] -= 0  # 평균단가 유지 → total_cost는 유지 가능
+                if pos["qty"] > 0:
+                    current_avg = pos["total_cost"] / pos["qty"]
+                    pos["qty"] -= t.quantity
+                    if pos["qty"] > 0:
+                        pos["total_cost"] = current_avg * pos["qty"]
+                    else:
+                        pos["total_cost"] = 0.0
+                else:
+                    pos["qty"] -= t.quantity
 
-        for ticker in position.keys():
-            pos = position[ticker]
-            pos["avg_price"] = pos["total_cost"] / pos["qty"] if pos["qty"] > 0 else 0.0
+        for ticker, pos in position.items():
+            if pos["qty"] > 0:
+                pos["avg_price"] = pos["total_cost"] / pos["qty"]
+            else:
+                pos["avg_price"] = 0.0
 
         return position
+
 
     def get_realized_pl(self) -> float:
         """모든 종목 총 실현손익"""
